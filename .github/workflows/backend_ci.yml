@@ -15,6 +15,7 @@ env:
 jobs:
   test_and_lint_backends:
     runs-on: ubuntu-latest
+
     services:
       product_db:
         image: postgres:15
@@ -27,7 +28,9 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports: [ "5432:5432" ]
+        ports:
+          - 5432:5432
+
       order_db:
         image: postgres:15
         env:
@@ -39,7 +42,8 @@ jobs:
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-        ports: [ "5433:5432" ]
+        ports:
+          - 5433:5432
 
     steps:
       - name: Checkout repository
@@ -60,10 +64,22 @@ jobs:
 
       - name: Run product_service tests
         working-directory: backend/product_service
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5432
+          POSTGRES_DB: products
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         run: pytest tests --maxfail=1 --disable-warnings -q
 
       - name: Run order_service tests
         working-directory: backend/order_service
+        env:
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5433
+          POSTGRES_DB: orders
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
         run: pytest tests --maxfail=1 --disable-warnings -q
 
   build_and_push_images:
@@ -74,15 +90,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Docker Login
+      - name: Docker Login to ACR
         run: echo "${{ secrets.ACR_PASSWORD }}" | docker login ${{ env.ACR_LOGIN_SERVER }} -u ${{ secrets.ACR_USERNAME }} --password-stdin
 
       - name: Build and Push Product Service Image
         run: |
-          docker build -t navnooracr722.azurecr.io/product_service:latest ./backend/product_service/
-          docker push navnooracr722.azurecr.io/product_service:latest
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/product_service:latest ./backend/product_service/
+          docker push ${{ env.ACR_LOGIN_SERVER }}/product_service:latest
 
       - name: Build and Push Order Service Image
         run: |
-          docker build -t navnooracr722.azurecr.io/order_service:latest ./backend/order_service/
-          docker push navnooracr722.azurecr.io/order_service:latest
+          docker build -t ${{ env.ACR_LOGIN_SERVER }}/order_service:latest ./backend/order_service/
+          docker push ${{ env.ACR_LOGIN_SERVER }}/order_service:latest
