@@ -1,6 +1,3 @@
-env:
-  ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
-
 name: Backend CI - Test, Build and Push Images to ACR
 
 on:
@@ -12,7 +9,8 @@ on:
       - '.github/workflows/backend_ci.yml'
 
 env:
-  ACR_LOGIN_SERVER: navnooracr722.azurecr.io
+  env:
+  ACR_LOGIN_SERVER: ${{ secrets.ACR_LOGIN_SERVER }}
   IMAGE_TAG: ${{ github.sha }}-${{ github.run_id }}
 
 jobs:
